@@ -78,6 +78,93 @@ npm i -S @substrate-system/web-component
 * [extend the factory function to create a web component](#create-a-component)
 * [Listen for all event with the `'*'` event name](#wildcard-event-listeners).
 
+## Hide Undefined Elements
+
+>
+> [!TIP]
+> Use the CSS [`:defined`](https://developer.mozilla.org/en-US/docs/Web/CSS/:defined)
+> pseudo-class to hide elements until they have been defined in JS, to prevent
+> a [FOUCE](https://www.abeautifulsite.net/posts/flash-of-undefined-custom-elements/#awaiting-customelements.whendefined).
+>
+
+```css
+my-element:not(:defined) {
+  visibility: hidden;
+}
+```
+
+>
+> [!CAUTION]
+> JS must exist on the device for the custom elements to be defined.
+> A better option might be to [set a single class when everything is defined](https://www.abeautifulsite.net/posts/revisiting-fouce).
+>
+
+### FOUCE
+
+My favorite way to deal with FOUCE is to add a class to the body tag, then
+remove it in JS, and hide things with CSS, as
+[seen here](https://www.abeautifulsite.net/posts/revisiting-fouce).
+
+#### HTML
+
+Write the static HTML like this:
+
+```html
+<html class="reduce-fouce">
+  ...
+</html>
+```
+
+#### JS
+
+```html
+<script type="module">
+  await Promise.race([
+    // Load all custom elements
+    Promise.allSettled([
+      customElements.whenDefined('my-button'),
+      customElements.whenDefined('my-card'),
+      customElements.whenDefined('my-rating')
+      // ...
+    ]),
+    // Resolve after two seconds
+    new Promise(resolve => setTimeout(resolve, 2000))
+  ]);
+
+  // Remove the class, showing the page content
+  document.documentElement.classList.remove('reduce-fouce');
+</script>
+```
+
+#### CSS
+
+```css
+html.reduce-fouce {
+  opacity: 0;
+}
+```
+
+#### `noscript`
+
+Include a `noscript` tag for when Javascript does not exist:
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <link rel="stylesheet" href="/style.css">
+
+    <noscript>
+      <style>
+        html.reduce-fouce {
+          opacity: 1!important;
+        }
+      </style>
+    </noscript>
+  </head>
+```
+
+
 ## Examples
 
 ### Create a component
@@ -182,27 +269,6 @@ el.dispatchEvent(new Event('click'))   // click
 el.removeEventListener('*', listener)
 ```
 
-
-### Hide undefined elements
-
->
-> [!TIP]
-> Use the CSS [`:defined`](https://developer.mozilla.org/en-US/docs/Web/CSS/:defined)
-> pseudo-class to hide elements until they have been defined in JS, to prevent
-> a [FOUCE](https://www.abeautifulsite.net/posts/flash-of-undefined-custom-elements/#awaiting-customelements.whendefined).
->
-
-```css
-my-element:not(:defined) {
-  visibility: hidden;
-}
-```
-
->
-> [!CAUTION]
-> JS must exist on the device for the custom elements to be defined.
-> A better option might be to [set a single class when everything is defined](https://www.abeautifulsite.net/posts/revisiting-fouce).
->
 
 ### Emit a namespaced event from the instance
 
