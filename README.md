@@ -82,6 +82,7 @@ npm i -S @substrate-system/web-component
 * [use `.event(name)` to get the namespaced event type](#listen-for-events)
 * [extend the factory function to create a web component](#create-a-component)
 * [Listen for all event with the `'*'` event name](#wildcard-event-listeners).
+* [Hide your component's content until it is ready](#hide-undefined-elements)
 
 ## Hide Undefined Elements
 
