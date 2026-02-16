@@ -2,7 +2,7 @@
   "name": "@substrate-system/web-component",
   "description": "Minimal parent web component",
   "type": "module",
-  "version": "0.0.44",
+  "version": "0.0.45",
   "main": "dist/index.js",
   "files": [
     "./dist/*"
