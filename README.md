@@ -48,7 +48,7 @@ This extends the native `HTMLElement`, and adds
   * [`emit(name:string, opts:{ bubbles?, cancelable?, detail? }):boolean`](#emitnamestring-opts-bubbles-cancelable-detail-boolean)
   * [`dispatch (type, opts)`](#dispatch-type-opts)
     + [`dispatch` example](#dispatch-example)
-  * [`on (name:string, handler:(ev:Event)=>any)`](#on-namestring-handlereveventany)
+  * [`on (name:string, handler:(ev:Event)=>any, options?:boolean|AddEventListenerOptions)`](#on-namestring-handlereveventany-optionsbooleanaddeventlisteneroptions)
   * [`event (name:string):string`](#event-namestringstring)
     + [`event` example](#event-example)
   * [`qs`](#qs)
@@ -442,7 +442,7 @@ el.dispatch('change')  // => 'change' event
 
 -------------------------------------------------------------------
 
-### `on (name:string, handler:(ev:Event)=>any)`
+### `on (name:string, handler:(ev:Event)=>any, options?:boolean|AddEventListenerOptions)`
 
 Listen for namespaced events with shorthand syntax.
 Internally this maps `name` to `Component.event(name)` and calls
@@ -454,6 +454,11 @@ const el = document.querySelector('my-element')
 el?.on('ready', ev => {
     console.log(ev.type) // => 'my-element:ready'
 })
+
+// pass native addEventListener options
+el?.on('ready', ev => {
+    console.log('fires once')
+}, { once: true })
 
 // namespaced wildcard
 el?.on('*', ev => {

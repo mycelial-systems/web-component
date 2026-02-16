@@ -280,9 +280,13 @@ export abstract class WebComponent extends window.HTMLElement {
     /**
      * Listen for namespaced events.
      */
-    on (evName:string, handler:(data)=>any) {
+    on (
+        evName:string,
+        handler:EventListenerOrEventListenerObject,
+        options?:boolean|AddEventListenerOptions
+    ) {
         const fullEvName = WebComponent.event.call(this, evName)
-        this.addEventListener(fullEvName, handler)
+        this.addEventListener(fullEvName, handler, options)
     }
 
     /**

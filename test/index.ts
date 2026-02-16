@@ -93,6 +93,24 @@ test('.on("*") listens to namespaced wildcard events', t => {
         'should capture namespaced event via .on("*")')
 })
 
+test('.on passes options to addEventListener', t => {
+    t.plan(1)
+    document.body.innerHTML +=
+        '<test-component class="on-options"></test-component>'
+
+    const el = document.querySelector<TestComponent>('.on-options')
+    let called = 0
+
+    el?.on('once-only', () => {
+        called++
+    }, { once: true })
+
+    el?.emit('once-only')
+    el?.emit('once-only')
+
+    t.equal(called, 1, 'should pass through addEventListener options')
+})
+
 test('to attributes', t => {
     const attrs = toAttributes({ hello: 'world', disabled: true })
     t.equal(attrs, 'hello="world" disabled')
