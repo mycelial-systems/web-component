@@ -21,7 +21,7 @@ This extends the native `HTMLElement`, and adds
 
 <!-- toc -->
 
-- [install](#install)
+- [Install](#install)
 - [tl;dr](#tldr)
 - [Hide Undefined Elements](#hide-undefined-elements)
   * [FOUCE](#fouce)
@@ -48,6 +48,7 @@ This extends the native `HTMLElement`, and adds
   * [`emit(name:string, opts:{ bubbles?, cancelable?, detail? }):boolean`](#emitnamestring-opts-bubbles-cancelable-detail-boolean)
   * [`dispatch (type, opts)`](#dispatch-type-opts)
     + [`dispatch` example](#dispatch-example)
+  * [`on (name:string, handler:(ev:Event)=>any)`](#on-namestring-handlereveventany)
   * [`event (name:string):string`](#event-namestringstring)
     + [`event` example](#event-example)
   * [`qs`](#qs)
@@ -69,7 +70,7 @@ This extends the native `HTMLElement`, and adds
 
 </details>
 
-## install
+## Install
 
 ```bash
 npm i -S @substrate-system/web-component
@@ -78,6 +79,7 @@ npm i -S @substrate-system/web-component
 ## tl;dr
 
 * [use `.emit` to emit a namepsaced event](#emit-a-namespaced-event-from-the-instance)
+* [use `.on(name, handler)` to listen for namespaced events](#listen-for-events)
 * [use `.dispatch` to emit a non-namespaced event](#emit-a-plain-string-not-namespaced-event)
 * [use `.event(name)` to get the namespaced event type](#listen-for-events)
 * [extend the factory function to create a web component](#create-a-component)
@@ -214,6 +216,11 @@ const el = document.querySelector('my-element')
 // listen for namespaced events
 el?.addEventListener(MyElement.event('hello'), ev => {
     console.log(ev.detail)  // => 'some data'
+})
+
+// shorthand for namespaced listeners
+el?.on('hello', ev => {
+    console.log(ev.type)  // => 'my-element:hello'
 })
 
 // listen for non-namespaced events
@@ -432,6 +439,30 @@ dispatch (type:string, opts:Partial<{
 const el = document.querySelector('my-element')
 el.dispatch('change')  // => 'change' event
 ```
+
+-------------------------------------------------------------------
+
+### `on (name:string, handler:(ev:Event)=>any)`
+
+Listen for namespaced events with shorthand syntax.
+Internally this maps `name` to `Component.event(name)` and calls
+`addEventListener`.
+
+```js
+const el = document.querySelector('my-element')
+
+el?.on('ready', ev => {
+    console.log(ev.type) // => 'my-element:ready'
+})
+
+// namespaced wildcard
+el?.on('*', ev => {
+    console.log(ev.type) // => any 'my-element:*' event from .emit()
+})
+```
+
+`on('*', handler)` only listens to namespaced events for that component.
+It does not listen to non-namespaced events such as `el.dispatch('click')`.
 
 -------------------------------------------------------------------
 

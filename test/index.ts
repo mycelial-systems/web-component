@@ -57,6 +57,42 @@ test('can emit namespaced events', t => {
     }
 })
 
+test('.on listens for namespaced events', t => {
+    t.plan(2)
+    document.body.innerHTML += '<test-component class="on-test"></test-component>'
+
+    const el = document.querySelector<TestComponent>('.on-test')
+    t.ok(el, 'should find an element')
+
+    el?.on('hello', (ev:CustomEvent<string>) => {
+        t.equal(ev.type, 'test-component:hello',
+            'should listen to the namespaced event type')
+    })
+
+    el?.emit('hello', { detail: 'from on' })
+})
+
+test('.on("*") listens to namespaced wildcard events', t => {
+    t.plan(2)
+    document.body.innerHTML +=
+        '<test-component class="on-wildcard"></test-component>'
+
+    const el = document.querySelector<TestComponent>('.on-wildcard')
+    const events:string[] = []
+
+    el?.on('*', (ev:Event) => {
+        events.push(ev.type)
+    })
+
+    el?.emit('first')
+    el?.emit('second')
+    el?.dispatch('plain')
+
+    t.equal(events.length, 2, 'should only capture namespaced events')
+    t.equal(events[0], 'test-component:first',
+        'should capture namespaced event via .on("*")')
+})
+
 test('to attributes', t => {
     const attrs = toAttributes({ hello: 'world', disabled: true })
     t.equal(attrs, 'hello="world" disabled')
