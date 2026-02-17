@@ -62,6 +62,9 @@ This extends the native `HTMLElement`, and adds
     + [`qsa`](#qsa-1)
     + [`isRegistered(name:string)`](#isregisterednamestring)
     + [`define(name:string, element:CustomElementConstructor)`](#definenamestring-elementcustomelementconstructor)
+  * [`/attributes`](#attributes)
+    + [`Attrs`](#attrs)
+    + [`toAttributes(attrs:Attrs):string`](#toattributesattrsattrsstring)
 - [Develop](#develop)
 - [Test](#test)
 - [See also](#see-also)
@@ -601,6 +604,48 @@ import { define } from '@substrate-system/web-component/util'
 function define (name:string, element:CustomElementConstructor) {
 ```
 
+
+### `/attributes`
+
+Utilities for working with HTML attributes.
+
+```js
+import { toAttributes } from '@substrate-system/web-component/attributes'
+```
+
+#### `Attrs`
+
+A type alias for attribute objects.
+
+```ts
+type Attrs = Record<string,
+    undefined|null|string|number|boolean|(string|number)[]>
+```
+
+#### `toAttributes(attrs:Attrs):string`
+
+Transform an object into an HTML attributes string. Keys with falsy values
+(`undefined`, `null`, `false`, `0`, `''`) are omitted. Boolean `true`
+produces a bare attribute name. Arrays are joined with spaces.
+
+```ts
+function toAttributes (attrs:Attrs):string
+```
+
+##### example
+
+```js
+import { toAttributes } from '@substrate-system/web-component/attributes'
+
+toAttributes({ class: 'foo bar', disabled: true })
+// => 'class="foo bar" disabled'
+
+toAttributes({ class: ['foo', 'bar'], hidden: false })
+// => 'class="foo bar"'
+
+toAttributes({ id: 'my-el', tabindex: 1 })
+// => 'id="my-el" tabindex="1"'
+```
 
 ---------------------------------------------------------------------
 
