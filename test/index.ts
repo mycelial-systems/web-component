@@ -1,5 +1,6 @@
 import { test } from '@substrate-system/tapzero'
 import { waitFor, waitForText } from '@substrate-system/dom'
+import * as preact from 'preact'
 import { toAttributes } from '../src/util.js'
 import { WebComponent } from '../src/index.js'
 
@@ -621,6 +622,29 @@ test('built-in HTMLElement property names are not overwritten', t => {
         undefined,
         'id descriptor should not be installed on SafeElement.prototype'
     )
+})
+
+test('Preact: disabled={true} prop sets disabled attribute', t => {
+    t.plan(2)
+
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+
+    preact.render(
+        preact.h('reflected-el', { className: 'preact-disabled-test', disabled: true }),
+        container
+    )
+
+    const el = container.querySelector<ReflectedElement>(
+        '.preact-disabled-test'
+    )
+    t.ok(el, 'should find the rendered element')
+    t.ok(
+        el!.hasAttribute('disabled'),
+        'setting disabled={true} via Preact should add the disabled attribute'
+    )
+
+    container.remove()
 })
 
 test('all done', () => {
