@@ -80,6 +80,7 @@
     "markdown-toc": "^1.2.0",
     "postcss": "^8.4.38",
     "postcss-nesting": "^14.0.0",
+    "preact": "^10.29.0",
     "tap-spec": "^5.0.0",
     "typedoc": "^0.28.1",
     "typescript": "^5.9.3",
