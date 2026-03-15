@@ -396,7 +396,7 @@ export function define (name:string, element:CustomElementConstructor) {
     if (!('customElements' in window)) return
     if (isRegistered(name)) return
 
-    const ctor = element as typeof WebComponent
+    const ctor = element as unknown as typeof WebComponent
     const boolAttrs:string[] = ctor.reflectedBooleanAttributes ?? []
     const strAttrs:string[] = ctor.reflectedStringAttributes ?? []
     const proto = (element as any).prototype
@@ -423,7 +423,7 @@ export function define (name:string, element:CustomElementConstructor) {
         if (boolAttrs.includes(attr)) {
             console.warn(
                 `[web-component] "${attr}" appears in both ` +
-                `reflectedBooleanAttributes and reflectedStringAttributes ` +
+                'reflectedBooleanAttributes and reflectedStringAttributes ' +
                 `on <${name}>. Boolean wins.`
             )
             continue
@@ -436,9 +436,11 @@ export function define (name:string, element:CustomElementConstructor) {
             },
             set (this:HTMLElement, v:unknown) {
                 // null and undefined both remove the attribute
-                v == null ?
-                    this.removeAttribute(attr) :
+                if (v == null) {
+                    this.removeAttribute(attr)
+                } else {
                     this.setAttribute(attr, String(v))
+                }
             },
             configurable: true,
             enumerable: true,
