@@ -631,7 +631,10 @@ test('Preact: disabled={true} prop sets disabled attribute', t => {
     document.body.appendChild(container)
 
     preact.render(
-        preact.h('reflected-el', { className: 'preact-disabled-test', disabled: true }),
+        preact.h('reflected-el', {
+            className: 'preact-disabled-test',
+            disabled: true
+        }),
         container
     )
 
