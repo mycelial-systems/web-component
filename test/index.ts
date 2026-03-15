@@ -41,6 +41,49 @@ class AnotherElement extends WebComponent.create('another-element') {
 
 AnotherElement.define()
 
+// Element that uses reflected attribute declaration
+class ReflectedElement extends WebComponent {
+    static TAG = 'reflected-el'
+    TAG = 'reflected-el'
+    static reflectedBooleanAttributes = ['disabled', 'readonly']
+    static reflectedStringAttributes = ['type', 'name']
+    declare disabled:boolean
+    declare readonly:boolean
+    declare type:string|null
+    declare name:string|null
+
+    render () {
+        this.innerHTML = '<slot></slot>'
+    }
+}
+
+ReflectedElement.define()
+
+// Element with a hand-written accessor — should not be overwritten.
+// Note: no `declare disabled` here because the get/set accessors already
+// provide the TypeScript type; `declare` + accessor on the same class is
+// a TypeScript error.
+class CustomAccessorElement extends WebComponent {
+    static TAG = 'custom-accessor-el'
+    TAG = 'custom-accessor-el'
+    static reflectedBooleanAttributes = ['disabled']
+
+    sideEffectCalled = false
+
+    get disabled ():boolean {
+        return this.hasAttribute('disabled')
+    }
+
+    set disabled (v:boolean) {
+        this.toggleAttribute('disabled', v)
+        this.sideEffectCalled = true
+    }
+
+    render () {}
+}
+
+CustomAccessorElement.define()
+
 test('can emit namespaced events', t => {
     t.plan(3)
     document.body.innerHTML += '<test-component class="test"></test-component>'
@@ -425,6 +468,161 @@ test('namespaced wildcard listener with EventListenerObject interface', t => {
         'test-component:test-event-one', 'should have correct event type')
 })
 
+test('boolean reflection: property assignment sets attribute', t => {
+    t.plan(2)
+    document.body.innerHTML +=
+        '<reflected-el class="bool-prop-test"></reflected-el>'
+    const el = document.querySelector<ReflectedElement>('.bool-prop-test')
+    t.ok(el, 'should find element')
+    el!.disabled = true
+    t.ok(el!.hasAttribute('disabled'),
+        'setting disabled property should set the attribute')
+})
+
+test('boolean reflection: property reads attribute', t => {
+    t.plan(2)
+    document.body.innerHTML +=
+        '<reflected-el class="bool-read-test" disabled></reflected-el>'
+    const el = document.querySelector<ReflectedElement>('.bool-read-test')
+    t.ok(el, 'should find element')
+    t.equal(el!.disabled, true,
+        'disabled property should return true when attribute is present')
+})
+
+test('boolean reflection: setting false removes attribute', t => {
+    t.plan(2)
+    document.body.innerHTML +=
+        '<reflected-el class="bool-false-test" disabled></reflected-el>'
+    const el = document.querySelector<ReflectedElement>('.bool-false-test')
+    t.ok(el, 'should find element')
+    el!.disabled = false
+    t.equal(el!.hasAttribute('disabled'), false,
+        'setting disabled=false should remove the attribute')
+})
+
+test('string reflection: property assignment sets attribute', t => {
+    t.plan(2)
+    document.body.innerHTML +=
+        '<reflected-el class="str-prop-test"></reflected-el>'
+    const el = document.querySelector<ReflectedElement>('.str-prop-test')
+    t.ok(el, 'should find element')
+    el!.type = 'submit'
+    t.equal(el!.getAttribute('type'), 'submit',
+        'setting type property should set the attribute')
+})
+
+test('string reflection: absent attribute returns null', t => {
+    t.plan(2)
+    document.body.innerHTML +=
+        '<reflected-el class="str-null-test"></reflected-el>'
+    const el = document.querySelector<ReflectedElement>('.str-null-test')
+    t.ok(el, 'should find element')
+    t.equal(el!.type, null,
+        'type property should return null when attribute is absent')
+})
+
+test('string reflection: setting null removes attribute', t => {
+    t.plan(2)
+    document.body.innerHTML +=
+        '<reflected-el class="str-remove-test" type="button"></reflected-el>'
+    const el = document.querySelector<ReflectedElement>('.str-remove-test')
+    t.ok(el, 'should find element')
+    el!.type = null
+    t.equal(el!.hasAttribute('type'), false,
+        'setting type=null should remove the attribute')
+})
+
+test('string reflection: setting undefined removes attribute', t => {
+    t.plan(2)
+    document.body.innerHTML +=
+        '<reflected-el class="str-undef-test" type="button"></reflected-el>'
+    const el = document.querySelector<ReflectedElement>('.str-undef-test')
+    t.ok(el, 'should find element')
+    ;(el as any).type = undefined
+    t.equal(el!.hasAttribute('type'), false,
+        'setting type=undefined should remove the attribute')
+})
+
+test('observedAttributes includes reflected boolean and string attrs', t => {
+    t.plan(1)
+    t.deepEqual(
+        ReflectedElement.observedAttributes.slice().sort(),
+        ['disabled', 'name', 'readonly', 'type'],
+        'observedAttributes should include all reflected attributes'
+    )
+})
+
+test('observedAttributes can be extended for non-reflected attrs', t => {
+    t.plan(1)
+
+    class ExtendedElement extends WebComponent {
+        static TAG = 'extended-el'
+        TAG = 'extended-el'
+        static reflectedBooleanAttributes = ['disabled']
+
+        static get observedAttributes () {
+            return [...super.observedAttributes, 'aria-label']
+        }
+
+        render () {}
+    }
+
+    t.deepEqual(
+        ExtendedElement.observedAttributes.slice().sort(),
+        ['aria-label', 'disabled'],
+        'observedAttributes should include both reflected and extra attrs'
+    )
+})
+
+test('hand-written accessor takes precedence over auto-generated', t => {
+    t.plan(3)
+    document.body.innerHTML +=
+        '<custom-accessor-el class="custom-acc-test"></custom-accessor-el>'
+    const el = document.querySelector<CustomAccessorElement>(
+        '.custom-acc-test'
+    )
+    t.ok(el, 'should find element')
+    el!.disabled = true
+    t.ok(el!.hasAttribute('disabled'),
+        'should still set the attribute')
+    t.ok(el!.sideEffectCalled,
+        'hand-written setter side effect should have run')
+})
+
+test('built-in HTMLElement property names are not overwritten', t => {
+    t.plan(2)
+    // `id` lives on Element.prototype — the `in` guard walks the chain and
+    // should catch it. SafeElement is registered once per test run; the
+    // custom element registry does not support unregistration, so this test
+    // must only run in a fresh environment (which `npm test` provides).
+    class SafeElement extends WebComponent {
+        static TAG = 'safe-el'
+        TAG = 'safe-el'
+        static reflectedStringAttributes = ['id']
+        render () {}
+    }
+
+    const originalDescriptor = Object.getOwnPropertyDescriptor(
+        Element.prototype, 'id'
+    )
+    SafeElement.define()
+
+    // The descriptor on Element.prototype should be unchanged
+    t.deepEqual(
+        Object.getOwnPropertyDescriptor(Element.prototype, 'id'),
+        originalDescriptor,
+        'id descriptor on Element.prototype should be unchanged'
+    )
+    // The descriptor should NOT have been placed on SafeElement.prototype either
+    t.equal(
+        Object.getOwnPropertyDescriptor(
+            (SafeElement as any).prototype, 'id'
+        ),
+        undefined,
+        'id descriptor should not be installed on SafeElement.prototype'
+    )
+})
+
 test('all done', () => {
     // @ts-expect-error explicitly end
     window.testsFinished = true
@@ -434,5 +632,7 @@ declare global {
     interface HTMLElementTagNameMap {
         'test-component': TestComponent;
         'another-element': AnotherElement;
+        'reflected-el': ReflectedElement;
+        'custom-accessor-el': CustomAccessorElement;
     }
 }

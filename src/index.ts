@@ -9,6 +9,39 @@ export abstract class WebComponent extends window.HTMLElement {
     static TAG:string = ''
     TAG:string = ''
 
+    /**
+     * Declare boolean attributes that should be reflected as properties.
+     * The base class auto-generates getters/setters and includes these in
+     * `observedAttributes`. Framework property assignment (e.g. Preact's
+     * `el.disabled = true`) will then correctly set the attribute.
+     */
+    static reflectedBooleanAttributes:string[] = []
+
+    /**
+     * Declare string attributes that should be reflected as properties.
+     * Getter returns `string|null` (null when attribute is absent).
+     * Setting `null` or `undefined` removes the attribute.
+     */
+    static reflectedStringAttributes:string[] = []
+
+    /**
+     * Auto-derived from `reflectedBooleanAttributes` and
+     * `reflectedStringAttributes`. Override with `super.observedAttributes`
+     * to add non-reflected observed attributes:
+     *
+     * ```ts
+     * static get observedAttributes () {
+     *     return [...super.observedAttributes, 'aria-label']
+     * }
+     * ```
+     */
+    static get observedAttributes ():string[] {
+        return [...new Set([
+            ...this.reflectedBooleanAttributes,
+            ...this.reflectedStringAttributes,
+        ])]
+    }
+
     static match (el:HTMLElement):HTMLElement|null {
         return _match(el, this.TAG)
     }
@@ -359,10 +392,60 @@ export function isRegistered (elName:string):boolean {
 }
 
 export function define (name:string, element:CustomElementConstructor) {
-    if (!window) return
+    if (typeof window === 'undefined') return
     if (!('customElements' in window)) return
+    if (isRegistered(name)) return
 
-    if (!isRegistered(name)) {
-        window.customElements.define(name, element)
+    const ctor = element as unknown as typeof WebComponent
+    const boolAttrs:string[] = ctor.reflectedBooleanAttributes ?? []
+    const strAttrs:string[] = ctor.reflectedStringAttributes ?? []
+    const proto = (element as any).prototype
+
+    for (const attr of boolAttrs) {
+        // Skip built-in IDL attributes on HTMLElement and ancestors
+        // (covers Element.prototype, Node.prototype, etc.)
+        if (attr in HTMLElement.prototype) continue
+        // Skip if the subclass already defines an own-property accessor
+        if (Object.getOwnPropertyDescriptor(proto, attr)) continue
+        Object.defineProperty(proto, attr, {
+            get (this:HTMLElement):boolean {
+                return this.hasAttribute(attr)
+            },
+            set (this:HTMLElement, v:unknown) {
+                this.toggleAttribute(attr, Boolean(v))
+            },
+            configurable: true,
+            enumerable: true,
+        })
     }
+
+    for (const attr of strAttrs) {
+        if (boolAttrs.includes(attr)) {
+            console.warn(
+                `[web-component] "${attr}" appears in both ` +
+                'reflectedBooleanAttributes and reflectedStringAttributes ' +
+                `on <${name}>. Boolean wins.`
+            )
+            continue
+        }
+        if (attr in HTMLElement.prototype) continue
+        if (Object.getOwnPropertyDescriptor(proto, attr)) continue
+        Object.defineProperty(proto, attr, {
+            get (this:HTMLElement):string|null {
+                return this.getAttribute(attr)
+            },
+            set (this:HTMLElement, v:unknown) {
+                // null and undefined both remove the attribute
+                if (v == null) {
+                    this.removeAttribute(attr)
+                } else {
+                    this.setAttribute(attr, String(v))
+                }
+            },
+            configurable: true,
+            enumerable: true,
+        })
+    }
+
+    window.customElements.define(name, element)
 }
