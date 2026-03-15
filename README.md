@@ -41,6 +41,11 @@ This extends the native `HTMLElement`, and adds
   * [Emit a plain string (not namespaced) event](#emit-a-plain-string-not-namespaced-event)
   * [Listen for all namespaced events from a component](#listen-for-all-namespaced-events-from-a-component)
   * [Listen for all events (global wildcard)](#listen-for-all-events-global-wildcard)
+- [Reflected Attributes](#reflected-attributes)
+  * [Attribute reactivity](#attribute-reactivity)
+  * [Observing non-reflected attributes](#observing-non-reflected-attributes)
+  * [TypeScript types](#typescript-types)
+  * [Migration from manual `observedAttributes`](#migration-from-manual-observedattributes)
 - [Modules](#modules)
   * [ESM](#esm)
   * [Common JS](#common-js)
@@ -360,6 +365,120 @@ el?.emit('custom')           // Triggers with type 'my-element:custom'
 el?.dispatch('hello')        // Triggers with type 'hello'
 el?.dispatchEvent(new Event('click'))  // Triggers with type 'click'
 ```
+
+## Reflected Attributes
+
+> [!NOTE]
+> Frameworks like Preact and React set non-string props on custom elements via
+> **property assignment** (`el.disabled = true`) rather than
+> `setAttribute('disabled', '')`. Native elements handle this automatically
+> because the browser has built-in IDL reflection. Web components need to
+> opt in.
+
+Declare which attributes should be reflected as properties using two static
+arrays:
+
+```ts
+class SubstrateButton extends WebComponent {
+    static TAG = 'substrate-button'
+
+    // Boolean attributes: property is true when attribute is present
+    static reflectedBooleanAttributes = ['disabled', 'readonly']
+
+    // String attributes: property mirrors the attribute value (null if absent)
+    static reflectedStringAttributes  = ['type', 'name', 'value']
+
+    // Optional: TypeScript types for reflected properties
+    declare disabled:boolean
+    declare readonly:boolean
+    declare type:string|null
+    declare name:string|null
+    declare value:string|null
+
+    render () { /* ... */ }
+}
+
+SubstrateButton.define()
+```
+
+The base class generates getters and setters for each declared attribute.
+`observedAttributes` is auto-derived — no need to declare it separately.
+
+### Attribute reactivity
+
+When a reflected attribute changes (via property assignment OR
+`setAttribute`), the browser fires `attributeChangedCallback`, which routes
+to your `handleChange_${name}` method as usual:
+
+```ts
+class SubstrateButton extends WebComponent {
+    static reflectedBooleanAttributes = ['disabled']
+    declare disabled:boolean
+
+    handleChange_disabled (_oldValue:string|null, newValue:string|null) {
+        this.qs('button')?.toggleAttribute('disabled', newValue !== null)
+    }
+
+    render () {
+        this.innerHTML = `<button>click me</button>`
+    }
+}
+```
+
+### Observing non-reflected attributes
+
+To observe additional attributes that don't need property reflection, extend
+`observedAttributes` using `super`:
+
+```ts
+class MyElement extends WebComponent {
+    static reflectedBooleanAttributes = ['disabled']
+
+    static get observedAttributes () {
+        return [...super.observedAttributes, 'role']
+    }
+
+    handleChange_role (_old:string|null, next:string|null) {
+        if (next) this.qs('button')?.setAttribute('role', next)
+    }
+}
+```
+
+### TypeScript types
+
+Reflected properties are installed at runtime and are invisible to TypeScript.
+Use `declare` to add types without emitting runtime code:
+
+```ts
+class MyButton extends WebComponent {
+    static reflectedBooleanAttributes = ['disabled']
+    static reflectedStringAttributes  = ['type']
+    declare disabled:boolean       // boolean: true = present, false = absent
+    declare type:string|null       // string|null: null when attribute is absent
+}
+```
+
+### Migration from manual `observedAttributes`
+
+If you previously declared `static observedAttributes` and wrote manual
+getters/setters, migrate like this:
+
+**Before:**
+```ts
+static observedAttributes = ['disabled']
+
+get disabled ():boolean { return this.hasAttribute('disabled') }
+set disabled (v:boolean) { this.toggleAttribute('disabled', v) }
+```
+
+**After:**
+```ts
+static reflectedBooleanAttributes = ['disabled']
+declare disabled:boolean   // TypeScript type only, no runtime code
+```
+
+If your setter has custom side-effect logic beyond `toggleAttribute`, keep the
+hand-written setter. The base class detects it and leaves it untouched.
 
 ## Modules
 

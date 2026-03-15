@@ -46,7 +46,7 @@ class ReflectedElement extends WebComponent {
     static TAG = 'reflected-el'
     TAG = 'reflected-el'
     static reflectedBooleanAttributes = ['disabled', 'readonly']
-    static reflectedStringAttributes  = ['type', 'name']
+    static reflectedStringAttributes = ['type', 'name']
     declare disabled:boolean
     declare readonly:boolean
     declare type:string|null
@@ -559,9 +559,11 @@ test('observedAttributes can be extended for non-reflected attrs', t => {
         static TAG = 'extended-el'
         TAG = 'extended-el'
         static reflectedBooleanAttributes = ['disabled']
+
         static get observedAttributes () {
             return [...super.observedAttributes, 'aria-label']
         }
+
         render () {}
     }
 
