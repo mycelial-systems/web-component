@@ -54,6 +54,7 @@ This extends the native `HTMLElement`, and adds
   * [`dispatch (type, opts)`](#dispatch-type-opts)
     + [`dispatch` example](#dispatch-example)
   * [`on (name:string, handler:(ev:Event)=>any, options?:boolean|AddEventListenerOptions)`](#on-namestring-handlereveventany-optionsbooleanaddeventlisteneroptions)
+  * [`off (name:string, handler:(ev:Event)=>any, options?:boolean|EventListenerOptions)`](#off-namestring-handlereveventany-optionsbooleanaddeventlisteneroptions)
   * [`event (name:string):string`](#event-namestringstring)
     + [`event` example](#event-example)
   * [`qs`](#qs)
@@ -590,6 +591,34 @@ el?.on('*', ev => {
 
 `on('*', handler)` only listens to namespaced events for that component.
 It does not listen to non-namespaced events such as `el.dispatch('click')`.
+
+-------------------------------------------------------------------
+
+### `off (name:string, handler:(ev:Event)=>any, options?:boolean|EventListenerOptions)`
+
+Remove a namespaced event listener. Internally this maps `name` to
+`Component.event(name)` and calls `removeEventListener`.
+
+```js
+const el = document.querySelector('my-element')
+
+const handler = (ev) => {
+    console.log(ev.type) // => 'my-element:ready'
+}
+
+// Add the listener
+el?.on('ready', handler)
+
+// Remove the listener
+el?.off('ready', handler)
+
+// Also works with namespaced wildcard
+el?.on('*', handler)
+el?.off('*', handler)
+```
+
+The handler reference must be the same function object that was passed to
+`on()`, just like with native `removeEventListener`.
 
 -------------------------------------------------------------------
 

@@ -155,6 +155,48 @@ test('.on passes options to addEventListener', t => {
     t.equal(called, 1, 'should pass through addEventListener options')
 })
 
+test('.off removes a namespaced event listener', t => {
+    t.plan(2)
+    document.body.innerHTML +=
+        '<test-component class="off-test"></test-component>'
+
+    const el = document.querySelector<TestComponent>('.off-test')
+    let called = 0
+
+    const handler = () => {
+        called++
+    }
+
+    el?.on('hello', handler)
+    el?.emit('hello')
+    el?.off('hello', handler)
+    el?.emit('hello')
+
+    t.equal(called, 1, 'should remove the event listener')
+    t.ok(el, 'should find an element')
+})
+
+test('.off("*") removes a namespaced wildcard listener', t => {
+    t.plan(1)
+    document.body.innerHTML +=
+        '<test-component class="off-wildcard"></test-component>'
+
+    const el = document.querySelector<TestComponent>('.off-wildcard')
+    const events:string[] = []
+
+    const handler = (ev:Event) => {
+        events.push(ev.type)
+    }
+
+    el?.on('*', handler)
+    el?.emit('first')
+    el?.off('*', handler)
+    el?.emit('second')
+
+    t.equal(events.length, 1,
+        'should remove the wildcard listener after off()')
+})
+
 test('to attributes', t => {
     const attrs = toAttributes({ hello: 'world', disabled: true })
     t.equal(attrs, 'hello="world" disabled')
