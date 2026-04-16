@@ -54,7 +54,7 @@ This extends the native `HTMLElement`, and adds
   * [`dispatch (type, opts)`](#dispatch-type-opts)
     + [`dispatch` example](#dispatch-example)
   * [`on (name:string, handler:(ev:Event)=>any, options?:boolean|AddEventListenerOptions)`](#on-namestring-handlereveventany-optionsbooleanaddeventlisteneroptions)
-  * [`off (name:string, handler:(ev:Event)=>any, options?:boolean|EventListenerOptions)`](#off-namestring-handlereveventany-optionsbooleanaddeventlisteneroptions)
+  * [`off (name:string, handler:(ev:Event)=>any, options?:boolean|EventListenerOptions)`](#off-namestring-handlereveventany-optionsbooleaneventlisteneroptions)
   * [`event (name:string):string`](#event-namestringstring)
     + [`event` example](#event-example)
   * [`qs`](#qs)
