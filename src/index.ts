@@ -335,6 +335,30 @@ export abstract class WebComponent extends window.HTMLElement {
     }
 
     /**
+     * Remove a namespaced event listener.
+     */
+    off<T extends Event = Event> (
+        evName:string,
+        handler:(ev:T)=>any,
+        options?:boolean|EventListenerOptions
+    ):void;
+
+    off (
+        evName:string,
+        handler:EventListenerObject,
+        options?:boolean|EventListenerOptions
+    ):void;
+
+    off (
+        evName:string,
+        handler:((ev:Event)=>any)|EventListenerObject,
+        options?:boolean|EventListenerOptions
+    ):void {
+        const fullEvName = WebComponent.event.call(this, evName)
+        this.removeEventListener(fullEvName, handler as EventListenerOrEventListenerObject, options)
+    }
+
+    /**
      * Enhanced removeEventListener that supports wildcards:
      * - Component.event('*') - Remove namespaced wildcard listener
      * - '*' - Remove global wildcard listener
