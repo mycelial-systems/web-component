@@ -14,34 +14,42 @@
   },
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
     "./qs": {
+      "types": "./dist/qs.d.ts",
       "import": "./dist/qs.js",
       "require": "./dist/qs.cjs"
     },
     "./qsa": {
+      "types": "./dist/qsa.d.ts",
       "import": "./dist/qsa.js",
       "require": "./dist/qsa.cjs"
     },
     "./util": {
+      "types": "./dist/util.d.ts",
       "import": "./dist/util.js",
       "require": "./dist/util.cjs"
     },
     "./attributes": {
+      "types": "./dist/attributes.d.ts",
       "import": "./dist/attributes.js",
       "require": "./dist/attributes.cjs"
     },
     "./wildcard": {
+      "types": "./dist/wildcard.d.ts",
       "import": "./dist/wildcard.js",
       "require": "./dist/wildcard.cjs"
     },
     "./*/min": {
+      "types": "./dist/*.d.ts",
       "import": "./dist/*.min.js",
       "require": "./dist/*.min.cjs"
     },
     "./*": {
+      "types": "./dist/*.d.ts",
       "import": [
         "./dist/*.js",
         "./dist/*"
