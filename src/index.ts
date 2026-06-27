@@ -47,18 +47,21 @@ export abstract class WebComponent extends window.HTMLElement {
     }
 
     /**
-     * Store global wildcard listeners (listen to all events)
-     * Triggered by ALL events dispatched through this element
+     * Store global wildcard listeners (listen to all events).
+     * Triggered by ALL events dispatched through this element.
+     * Allocated lazily on the first `addEventListener('*')`, so components
+     * that never use wildcards pay no per-instance allocation cost.
      * @private
      */
-    private _globalWildcardListeners:Set<WildcardListenerEntry> = new Set()
+    private _globalWildcardListeners?:Set<WildcardListenerEntry>
 
     /**
-     * Store namespaced wildcard listeners (listen to 'component-name:*')
-     * Triggered by events from emit() that match this component's namespace
+     * Store namespaced wildcard listeners (listen to 'component-name:*').
+     * Triggered by events from emit() that match this component's namespace.
+     * Allocated lazily on the first `addEventListener(Component.event('*'))`.
      * @private
      */
-    private _namespacedWildcardListeners:Set<WildcardListenerEntry> = new Set()
+    private _namespacedWildcardListeners?:Set<WildcardListenerEntry>
 
     static create (elementName:string):typeof WebComponent & {
         new (...args:any[]):WebComponent;
@@ -103,14 +106,14 @@ export abstract class WebComponent extends window.HTMLElement {
      * @param  {string} oldValue The old attribute value
      * @param  {string} newValue The new attribute value
      */
-    async attributeChangedCallback (
+    attributeChangedCallback (
         name:string,
         oldValue:string,
         newValue:string
-    ):Promise<void> {
-        const handler = this[`handleChange_${name}`]
+    ):void {
+        const handler = this[handlerKey(name)]
         if (handler) {
-            await handler.call(this, oldValue, newValue)
+            handler.call(this, oldValue, newValue)
         }
     }
 
@@ -133,11 +136,13 @@ export abstract class WebComponent extends window.HTMLElement {
     ): void {
         if (type === WebComponent.event.call(this, '*')) {
             // Handle namespaced wildcard listener (component-name:*)
-            this._namespacedWildcardListeners.add({ listener, options })
+            const set = (this._namespacedWildcardListeners ??= new Set())
+            set.add({ listener, options })
         } else if (type === '*') {
             // Handle global wildcard listener (all events)
             if (listener) {
-                this._globalWildcardListeners.add({ listener, options })
+                const set = (this._globalWildcardListeners ??= new Set())
+                set.add({ listener, options })
             }
         } else {
             // Normal event listener - delegate to native implementation
@@ -153,7 +158,8 @@ export abstract class WebComponent extends window.HTMLElement {
      * @private
      */
     private _notifyNamespacedWildcardListeners (event: Event): void {
-        if (this._namespacedWildcardListeners.size === 0) {
+        const listeners = this._namespacedWildcardListeners
+        if (!listeners || listeners.size === 0) {
             return
         }
 
@@ -165,7 +171,7 @@ export abstract class WebComponent extends window.HTMLElement {
         }
 
         // Call each namespaced wildcard listener
-        this._namespacedWildcardListeners.forEach(({ listener }) => {
+        listeners.forEach(({ listener }) => {
             try {
                 if (typeof listener === 'function') {
                     listener.call(this, event)
@@ -190,12 +196,13 @@ export abstract class WebComponent extends window.HTMLElement {
      * @private
      */
     private _notifyGlobalWildcardListeners (event: Event): void {
-        if (this._globalWildcardListeners.size === 0) {
+        const listeners = this._globalWildcardListeners
+        if (!listeners || listeners.size === 0) {
             return
         }
 
         // Call each global wildcard listener
-        this._globalWildcardListeners.forEach(({ listener }) => {
+        listeners.forEach(({ listener }) => {
             try {
                 if (typeof listener === 'function') {
                     listener.call(this, event)
@@ -271,8 +278,11 @@ export abstract class WebComponent extends window.HTMLElement {
         // listeners (**)
         const result = this.dispatchEvent(event)
 
-        // Notify namespaced wildcard listeners (*)
-        this._notifyNamespacedWildcardListeners(event)
+        // Notify namespaced wildcard listeners (*). Skip unless one has
+        // actually been registered.
+        if (this._namespacedWildcardListeners) {
+            this._notifyNamespacedWildcardListeners(event)
+        }
 
         return result
     }
@@ -287,8 +297,12 @@ export abstract class WebComponent extends window.HTMLElement {
     dispatchEvent (event: Event): boolean {
         const result = super.dispatchEvent(event)
 
-        // Notify global wildcard listeners for ALL events
-        this._notifyGlobalWildcardListeners(event)
+        // Notify global wildcard listeners for ALL events. Skip entirely
+        // unless a global wildcard listener has been registered, so the
+        // common case adds only a single existence check per dispatch.
+        if (this._globalWildcardListeners) {
+            this._notifyGlobalWildcardListeners(event)
+        }
 
         return result
     }
@@ -402,6 +416,16 @@ export abstract class WebComponent extends window.HTMLElement {
 
 function eventName (namespace:string, evType:string) {
     return `${namespace}:${evType}`
+}
+
+/**
+ * Cache of attribute name -> handler method name (`handleChange_<attr>`).
+ * Building the lookup string once per attribute avoids re-allocating it on
+ * every `attributeChangedCallback`.
+ */
+const handlerKeys:Record<string, string> = Object.create(null)
+function handlerKey (name:string):string {
+    return handlerKeys[name] || (handlerKeys[name] = `handleChange_${name}`)
 }
 
 /**
