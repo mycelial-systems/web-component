@@ -242,6 +242,35 @@ el?.addEventListener('hello', ev => {
 
 The component supports two types of wildcard event listeners.
 
+> [!IMPORTANT]
+> Wildcard listeners are an opt-in feature kept in a separate module, so that
+> the core component stays minimal. Import from
+> `@substrate-system/web-component/wildcard` and extend `WildcardComponent`,
+> or wrap your own base class with `withWildcards`.
+
+```js
+import { WebComponent } from '@substrate-system/web-component'
+import {
+    WildcardComponent,
+    withWildcards
+} from '@substrate-system/web-component/wildcard'
+
+// the easy way
+class MyElement extends WildcardComponent {
+    static TAG = 'my-element'
+    render () { /* ... */ }
+}
+
+// ...or add wildcard support to an existing base class
+class MyOtherElement extends withWildcards(WebComponent) {
+    static TAG = 'my-other-element'
+    render () { /* ... */ }
+}
+```
+
+Components that extend the plain `WebComponent` do not have wildcard support.
+Specific event names via `emit`, `dispatch`, `on`, and `off` work as normal.
+
 #### Namespaced wildcard: `Component.event('*')`
 
 Listen to all events emitted through the component's `.emit()` method
@@ -330,7 +359,8 @@ el?.dispatch('hello', { detail: 'some data again' })  // => `hello`
 ### Listen for all namespaced events from a component
 
 Use the pattern `Component.event('*')` to listen to all events emitted by a
-specific component with its namespace.
+specific component with its namespace. Requires the wildcard mixin — see
+[Wildcard Event Listeners](#wildcard-event-listeners).
 
 ```js
 const el = document.querySelector('my-element')
@@ -350,7 +380,8 @@ el?.emit('change', { detail: 'changed' })
 
 Use the literal string `'*'` to listen to **all** events dispatched through
 the element, including both namespaced and non-namespaced events, as well as
-native DOM events.
+native DOM events. Requires the wildcard mixin — see
+[Wildcard Event Listeners](#wildcard-event-listeners).
 
 ```js
 const el = document.querySelector('my-element')
@@ -591,6 +622,10 @@ el?.on('*', ev => {
 
 `on('*', handler)` only listens to namespaced events for that component.
 It does not listen to non-namespaced events such as `el.dispatch('click')`.
+
+> [!NOTE]
+> `on('*')` and `addEventListener('*')` require the wildcard mixin — see
+> [Wildcard Event Listeners](#wildcard-event-listeners).
 
 -------------------------------------------------------------------
 

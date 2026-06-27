@@ -1,10 +1,5 @@
 import { match as _match } from './util.js'
 
-interface WildcardListenerEntry {
-    listener:EventListenerOrEventListenerObject
-    options?:boolean|AddEventListenerOptions
-}
-
 export abstract class WebComponent extends window.HTMLElement {
     static TAG:string = ''
     TAG:string = ''
@@ -45,23 +40,6 @@ export abstract class WebComponent extends window.HTMLElement {
     static match (el:HTMLElement):HTMLElement|null {
         return _match(el, this.TAG)
     }
-
-    /**
-     * Store global wildcard listeners (listen to all events).
-     * Triggered by ALL events dispatched through this element.
-     * Allocated lazily on the first `addEventListener('*')`, so components
-     * that never use wildcards pay no per-instance allocation cost.
-     * @private
-     */
-    private _globalWildcardListeners?:Set<WildcardListenerEntry>
-
-    /**
-     * Store namespaced wildcard listeners (listen to 'component-name:*').
-     * Triggered by events from emit() that match this component's namespace.
-     * Allocated lazily on the first `addEventListener(Component.event('*'))`.
-     * @private
-     */
-    private _namespacedWildcardListeners?:Set<WildcardListenerEntry>
 
     static create (elementName:string):typeof WebComponent & {
         new (...args:any[]):WebComponent;
@@ -115,105 +93,6 @@ export abstract class WebComponent extends window.HTMLElement {
         if (handler) {
             handler.call(this, oldValue, newValue)
         }
-    }
-
-    /**
-     * Enhanced addEventListener that supports wildcards:
-     * - Component.event('*') - Listen to all namespaced events for this
-     *   component (e.g., 'my-component:*')
-     * - '*' - Listen to ALL events (namespaced and non-namespaced, including
-     *   normal DOM events)
-     *
-     * @param type - Event type, Component.event('*') for namespaced wildcard,
-     *   or '*' for global wildcard
-     * @param listener - Event listener function or object
-     * @param options - Event listener options
-     */
-    addEventListener (
-        type:string,
-        listener:EventListenerOrEventListenerObject,
-        options?:boolean|AddEventListenerOptions
-    ): void {
-        if (type === WebComponent.event.call(this, '*')) {
-            // Handle namespaced wildcard listener (component-name:*)
-            const set = (this._namespacedWildcardListeners ??= new Set())
-            set.add({ listener, options })
-        } else if (type === '*') {
-            // Handle global wildcard listener (all events)
-            if (listener) {
-                const set = (this._globalWildcardListeners ??= new Set())
-                set.add({ listener, options })
-            }
-        } else {
-            // Normal event listener - delegate to native implementation
-            super.addEventListener(type, listener, options)
-        }
-    }
-
-    /**
-     * Notify namespaced wildcard listeners of an event
-     * Only fires for events that match this component's namespace
-     *
-     * @param event - The event to dispatch to namespaced wildcard listeners
-     * @private
-     */
-    private _notifyNamespacedWildcardListeners (event: Event): void {
-        const listeners = this._namespacedWildcardListeners
-        if (!listeners || listeners.size === 0) {
-            return
-        }
-
-        const componentName = this.TAG
-
-        // Only trigger for events in this component's namespace
-        if (!componentName || !event.type.startsWith(`${componentName}:`)) {
-            return
-        }
-
-        // Call each namespaced wildcard listener
-        listeners.forEach(({ listener }) => {
-            try {
-                if (typeof listener === 'function') {
-                    listener.call(this, event)
-                } else if (listener && typeof listener.handleEvent === 'function') {
-                    listener.handleEvent(event)
-                }
-            } catch (error) {
-                // Log errors but don't let one listener break others
-                console.error(
-                    'Error in namespaced wildcard event listener:',
-                    error
-                )
-            }
-        })
-    }
-
-    /**
-     * Notify global wildcard listeners of an event
-     * Fires for ALL events dispatched through this element
-     *
-     * @param event - The event to dispatch to global wildcard listeners
-     * @private
-     */
-    private _notifyGlobalWildcardListeners (event: Event): void {
-        const listeners = this._globalWildcardListeners
-        if (!listeners || listeners.size === 0) {
-            return
-        }
-
-        // Call each global wildcard listener
-        listeners.forEach(({ listener }) => {
-            try {
-                if (typeof listener === 'function') {
-                    listener.call(this, event)
-                } else if (listener && typeof listener.handleEvent === 'function') {
-                    listener.handleEvent(event)
-                }
-            } catch (error) {
-            // Log errors but don't let one listener break others
-                console.error('Error in global wildcard event listener:', error)
-            }
-        })
     }
 
     connectedCallback () {
@@ -274,37 +153,7 @@ export abstract class WebComponent extends window.HTMLElement {
             detail
         })
 
-        // This will trigger both specific listeners and global wildcard
-        // listeners (**)
-        const result = this.dispatchEvent(event)
-
-        // Notify namespaced wildcard listeners (*). Skip unless one has
-        // actually been registered.
-        if (this._namespacedWildcardListeners) {
-            this._notifyNamespacedWildcardListeners(event)
-        }
-
-        return result
-    }
-
-    /**
-     * Override dispatchEvent to notify global wildcard listeners
-     * This ensures that '**' listeners catch ALL events
-     *
-     * @param event - The event to dispatch
-     * @returns true if the event was not cancelled
-     */
-    dispatchEvent (event: Event): boolean {
-        const result = super.dispatchEvent(event)
-
-        // Notify global wildcard listeners for ALL events. Skip entirely
-        // unless a global wildcard listener has been registered, so the
-        // common case adds only a single existence check per dispatch.
-        if (this._globalWildcardListeners) {
-            this._notifyGlobalWildcardListeners(event)
-        }
-
-        return result
+        return this.dispatchEvent(event)
     }
 
     /**
@@ -370,47 +219,6 @@ export abstract class WebComponent extends window.HTMLElement {
     ):void {
         const fullEvName = WebComponent.event.call(this, evName)
         this.removeEventListener(fullEvName, handler as EventListenerOrEventListenerObject, options)
-    }
-
-    /**
-     * Enhanced removeEventListener that supports wildcards:
-     * - Component.event('*') - Remove namespaced wildcard listener
-     * - '*' - Remove global wildcard listener
-     *
-     * @param type - Event type, Component.event('*') for namespaced, or '*'
-     *   for global
-     * @param listener - Event listener function or object to remove
-     * @param options - Event listener options
-     */
-    removeEventListener (
-        type:string,
-        listener:EventListenerOrEventListenerObject,
-        options?: boolean | EventListenerOptions
-    ): void {
-        if (type === WebComponent.event.call(this, '*')) {
-            // Remove namespaced wildcard listener
-            if (listener && this._namespacedWildcardListeners) {
-                for (const entry of this._namespacedWildcardListeners) {
-                    if (entry.listener === listener) {
-                        this._namespacedWildcardListeners.delete(entry)
-                        break
-                    }
-                }
-            }
-        } else if (type === '*') {
-            // Remove global wildcard listener
-            if (listener && this._globalWildcardListeners) {
-                for (const entry of this._globalWildcardListeners) {
-                    if (entry.listener === listener) {
-                        this._globalWildcardListeners.delete(entry)
-                        break
-                    }
-                }
-            }
-        } else {
-            // Normal event listener - delegate to native implementation
-            super.removeEventListener(type, listener, options)
-        }
     }
 }
 

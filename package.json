@@ -33,6 +33,10 @@
       "import": "./dist/attributes.js",
       "require": "./dist/attributes.cjs"
     },
+    "./wildcard": {
+      "import": "./dist/wildcard.js",
+      "require": "./dist/wildcard.cjs"
+    },
     "./*/min": {
       "import": "./dist/*.min.js",
       "require": "./dist/*.min.cjs"
