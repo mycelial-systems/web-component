@@ -77,17 +77,23 @@
     "postversion": "git push --follow-tags && npm publish",
     "prepublishOnly": "npm run build"
   },
+  "overrides": {
+    "eslint-config-standard": {
+      "eslint": "$eslint"
+    }
+  },
   "devDependencies": {
-    "@substrate-system/debug": "^0.9.52",
+    "@eslint/eslintrc": "^3.3.5",
+    "@substrate-system/debug": "^0.9.64",
     "@substrate-system/dom": "^0.1.13",
-    "@substrate-system/tapout": "^0.0.37",
+    "@substrate-system/tapout": "^0.0.38",
     "@substrate-system/tapzero": "^0.10.13",
-    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.7.0",
     "@typescript-eslint/parser": "^8.0.0",
     "auto-changelog": "^2.4.0",
     "cssnano": "^7.0.3",
     "esbuild": "^0.28.0",
-    "eslint": "^8.57.0",
+    "eslint": "^10.6.0",
     "eslint-config-standard": "^17.1.0",
     "markdown-toc": "^1.2.0",
     "postcss": "^8.4.38",
