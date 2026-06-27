@@ -33,8 +33,8 @@ type WildcardCtor = abstract new (...args:any[])=>WebComponent
  */
 export function withWildcards<T extends WildcardCtor> (Base:T) {
     abstract class Wildcard extends Base {
-        #global?:Set<WildcardEntry>
-        #namespaced?:Set<WildcardEntry>
+        global?:Set<WildcardEntry>
+        namespaced?:Set<WildcardEntry>
 
         addEventListener (
             type:string,
@@ -43,12 +43,12 @@ export function withWildcards<T extends WildcardCtor> (Base:T) {
         ):void {
             if (type === `${this.TAG}:*`) {
                 // Namespaced wildcard listener (component-name:*)
-                const set = (this.#namespaced ??= new Set())
+                const set = (this.namespaced ??= new Set())
                 set.add({ listener, options })
             } else if (type === '*') {
                 // Global wildcard listener (all events)
                 if (listener) {
-                    const set = (this.#global ??= new Set())
+                    const set = (this.global ??= new Set())
                     set.add({ listener, options })
                 }
             } else {
@@ -62,9 +62,9 @@ export function withWildcards<T extends WildcardCtor> (Base:T) {
             options?:boolean|EventListenerOptions
         ):void {
             if (type === `${this.TAG}:*`) {
-                removeEntry(this.#namespaced, listener)
+                removeEntry(this.namespaced, listener)
             } else if (type === '*') {
-                removeEntry(this.#global, listener)
+                removeEntry(this.global, listener)
             } else {
                 super.removeEventListener(type, listener, options)
             }
@@ -78,10 +78,10 @@ export function withWildcards<T extends WildcardCtor> (Base:T) {
         dispatchEvent (event:Event):boolean {
             const result = super.dispatchEvent(event)
 
-            const global = this.#global
+            const global = this.global
             if (global) notify(global, event, this)
 
-            const namespaced = this.#namespaced
+            const namespaced = this.namespaced
             if (
                 namespaced &&
                 this.TAG &&
