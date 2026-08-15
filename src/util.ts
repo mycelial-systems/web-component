@@ -12,16 +12,12 @@ export function isRegistered (elName:string):boolean {
 }
 
 export function define (name:string, element:CustomElementConstructor) {
-    if (!window) return
+    if (typeof window === 'undefined') return
     if (!('customElements' in window)) return
-
     if (!isRegistered(name)) {
         window.customElements.define(name, element)
     }
 }
-
-export const qs = document.querySelector.bind(document)
-export const qsa = document.querySelectorAll.bind(document)
 
 /**
  * Get the closes parent element matching the given selector.
@@ -33,3 +29,6 @@ export function match (el:HTMLElement, s:string):HTMLElement|null {
     if (!el.matches) el = el.parentElement!
     return el.matches(s) ? el : el.closest(s)
 }
+
+export * from './qs.js'
+export * from './qsa.js'
