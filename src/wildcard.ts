@@ -1,6 +1,6 @@
 import { WebComponent } from './index.js'
 
-interface WildcardEntry {
+export interface WildcardEntry {
     listener:EventListenerOrEventListenerObject
     options?:boolean|AddEventListenerOptions
 }
