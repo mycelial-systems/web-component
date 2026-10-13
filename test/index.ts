@@ -186,7 +186,10 @@ test('use factory function', async t => {
         timeout: 3000
     }), 'should find the element')
 
-    t.equal(AnotherElement.TAG, 'another-element',
+    // `create` should keep the literal tag name in the type, so this
+    // assignment fails to typecheck if TAG widens to `string`
+    const tag:'another-element' = AnotherElement.TAG
+    t.equal(tag, 'another-element',
         'should have the expected TAG property')
 })
 

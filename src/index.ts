@@ -41,9 +41,9 @@ export abstract class WebComponent extends window.HTMLElement {
         return _match(el, this.TAG)
     }
 
-    static create (elementName:string):typeof WebComponent & {
-        new (...args:any[]):WebComponent;
-        TAG:string;
+    static create<T extends string> (elementName:T):typeof WebComponent & {
+        new (...args:any[]):WebComponent & { TAG:T };
+        TAG:T;
         define: typeof WebComponent.define;
         event: typeof WebComponent.event;
     } {
