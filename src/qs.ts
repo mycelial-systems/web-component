@@ -10,6 +10,8 @@ export function qs<E extends Element = Element> (
     selectors:string
 ):E|null
 
-export function qs (selectors:string):Element|null {
-    return document.querySelector(selectors)
+export function qs (selectors:string):Element|null|undefined {
+    if (document) {
+        return document.querySelector(selectors)
+    }
 }

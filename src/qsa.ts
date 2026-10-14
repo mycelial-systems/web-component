@@ -10,6 +10,8 @@ export function qsa<E extends Element = Element> (
     selectors:string
 ):NodeListOf<E>
 
-export function qsa (selectors:string):NodeListOf<Element> {
-    return document.querySelectorAll(selectors)
+export function qsa (selectors:string):NodeListOf<Element>|undefined {
+    if (document) {
+        return document.querySelectorAll(selectors)
+    }
 }
